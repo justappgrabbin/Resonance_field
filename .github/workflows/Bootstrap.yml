@@ -86,6 +86,9 @@ jobs:
             "version": "${{ steps.manifest.outputs.version }}",
             "private": true,
             "type": "module",
+            "engines": {
+              "node": ">=22"
+            },
             "scripts": {
               "dev": "vite",
               "build": "vite build",
@@ -157,4 +160,3 @@ jobs:
             git commit -m "🔧 [AUTO] Bootstrap scaffold v${{ steps.manifest.outputs.version }}"
             git push
           fi
-          
