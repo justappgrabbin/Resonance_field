@@ -1,0 +1,360 @@
+# .github/workflows/populate.yml
+name: 🌱 Populate Resonance Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      dyad_name:
+        description: 'Name of your dyad/field'
+        required: true
+        default: 'our-resonance'
+      openai_key_secret:
+        description: 'Name of GitHub secret containing OpenAI key'
+        required: true
+        default: 'OPENAI_API_KEY'
+      server_callback_url:
+        description: 'Your server URL for agent callbacks'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate Full Directory Structure
+        run: |
+          mkdir -p src/{engine,agent,components,services}
+          mkdir -p server/{routes,services}
+          mkdir -p .github/workflows
+          mkdir -p public/ephemeris
+          mkdir -p scripts
+
+      - name: Write CHNOPS Engine
+        run: |
+          cat > src/engine/CHNOPS.js << 'ENGINEEOF'
+          export const CODON_MATRIX = {
+            alanine:      { gates: [57,48,18,46], formula: {C:3,H:7,N:1,O:2,S:0}, theme: "Fear/Survival", circuit: "Splenic" },
+            arginine:     { gates: [10,38,35,17,21,51], formula: {C:6,H:14,N:4,O:2,S:0}, theme: "Ego/Competition", circuit: "Heart/Root" },
+            asparagine:   { gates: [43,34], formula: {C:4,H:8,N:2,O:3,S:0}, theme: "Efficiency/Sacral", circuit: "Individual" },
+            asparticAcid: { gates: [28,32], formula: {C:4,H:7,N:1,O:4,S:0}, theme: "Fear of Death/Failure", circuit: "Splenic/Tribal" },
+            cysteine:     { gates: [45,16], formula: {C:3,H:7,N:1,O:2,S:1}, theme: "Skills/Rulership", circuit: "Throat/Tribal" },
+            glutamine:    { gates: [13,30], formula: {C:5,H:10,N:2,O:3,S:0}, theme: "Secrets/Desire", circuit: "Solar Plexus" },
+            glutamicAcid: { gates: [44,50], formula: {C:5,H:9,N:1,O:4,S:0}, theme: "Intelligence/Values", circuit: "Splenic" },
+            glycine:      { gates: [6,47,64,40], formula: {C:2,H:5,N:1,O:2,S:0}, theme: "Chaos/Denial", circuit: "Head/Ajna/Ego" },
+            histidine:    { gates: [49,55], formula: {C:6,H:9,N:3,O:2,S:0}, theme: "Mutation/Spirit", circuit: "Solar Plexus" },
+            isoleucine:   { gates: [61,60,19], formula: {C:6,H:13,N:1,O:2,S:0}, theme: "Pressure/Thinking", circuit: "Head/Root" },
+            leucine:      { gates: [42,3,27,24,20,23], formula: {C:6,H:13,N:1,O:2,S:0}, theme: "Uniqueness/Incarnation", circuit: "Sacral/Throat" },
+            lysine:       { gates: [1,14], formula: {C:6,H:14,N:2,O:2,S:0}, theme: "Direction/Work", circuit: "Sacral/G" },
+            methionine:   { gates: [41], formula: {C:5,H:11,N:1,O:2,S:1}, theme: "Initiation/Fantasy", circuit: "Root" },
+            phenylalanine:{ gates: [8,2], formula: {C:9,H:11,N:1,O:2,S:0}, theme: "Driver/Contribution", circuit: "G/Throat" },
+            proline:      { gates: [37,63,22,36], formula: {C:5,H:9,N:1,O:2,S:0}, theme: "Bonding/Emotion", circuit: "Solar Plexus/Throat" },
+            serine:       { gates: [58,54,53,39,52,15], formula: {C:3,H:7,N:1,O:3,S:0}, theme: "Pressure/Flow", circuit: "Root" },
+            threonine:    { gates: [4,29], formula: {C:4,H:9,N:1,O:3,S:0}, theme: "Commitment/Experience", circuit: "Ajna/Sacral" },
+            tryptophan:   { gates: [35], formula: {C:11,H:12,N:2,O:2,S:0}, theme: "Experience/Change", circuit: "Throat" },
+            tyrosine:     { gates: [11,56], formula: {C:9,H:11,N:1,O:3,S:0}, theme: "Ideas/Stories", circuit: "Ajna/Throat" },
+            valine:       { gates: [26,44], formula: {C:5,H:11,N:1,O:2,S:0}, theme: "Transmission/Tribe", circuit: "Heart/Throat" }
+          };
+
+          export const GATE_TO_CODON = {};
+          Object.entries(CODON_MATRIX).forEach(([acid, data]) => {
+            data.gates.forEach(gate => { GATE_TO_CODON[gate] = acid; });
+          });
+
+          export const ELEMENTAL_BEHAVIOR = {
+            C: "structure", H: "flow", N: "catalysis", O: "oxidation", S: "bridging", P: "phosphorylation"
+          };
+
+          export function computeCHNOPS(activatedGates, normalization = 'softmax') {
+            const raw = { C: 0, H: 0, N: 0, O: 0, S: 0, P: 0 };
+            activatedGates.forEach(gate => {
+              const codon = CODON_MATRIX[GATE_TO_CODON[gate]];
+              if (codon) {
+                Object.keys(raw).forEach(el => { if (el !== 'P') raw[el] += codon.formula[el] || 0; });
+              }
+            });
+            raw.P = (raw.N * 3) + (raw.O * 2) + (raw.S * 5);
+            const values = Object.values(raw);
+            const normalized = {};
+            Object.keys(raw).forEach(key => {
+              if (normalization === 'unit') normalized[key] = raw[key] / values.reduce((a, b) => a + b, 0);
+              else if (normalization === 'softmax') normalized[key] = Math.exp(raw[key]) / values.reduce((a, b) => a + Math.exp(b), 0);
+              else normalized[key] = raw[key];
+            });
+            return { raw, normalized, gateCount: activatedGates.length };
+          }
+
+          export function computeResonance(vectorA, vectorB) {
+            const keys = ['C', 'H', 'N', 'O', 'S', 'P'];
+            let dot = 0, normA = 0, normB = 0;
+            keys.forEach(k => {
+              dot += vectorA[k] * vectorB[k];
+              normA += vectorA[k] ** 2;
+              normB += vectorB[k] ** 2;
+            });
+            const similarity = dot / (Math.sqrt(normA) * Math.sqrt(normB));
+            let interference = "neutral";
+            if (similarity > 0.85) interference = "constructive";
+            else if (similarity < 0.3) interference = "destructive";
+            else if (vectorA.N > vectorB.N * 1.5) interference = "catalytic";
+            return { similarity, interference, dyadPotential: similarity * (vectorA.P + vectorB.P) };
+          }
+          ENGINEEOF
+
+      - name: Write Core Engines (Stubbed)
+        run: |
+          for file in AspirationCore SelfTeachingEphemeris DyadicPurpose ComplementaryEngine ScienceMode Persistence ResonanceGit VoiceEngine AmbientFieldEngine DeepIngestionEngine SurvivalEngine OrganismPersonality Aspirations ExecutionEngine PersonalityEngine AuditEngine RewindProtocol; do
+            cat > "src/engine/${file}.js" << EOF
+          export class ${file} {
+            constructor(config = {}) {
+              this.config = config;
+              this.initialized = false;
+            }
+            async init() { this.initialized = true; }
+          }
+          EOF
+          done
+
+      - name: Write Agent Shell
+        run: |
+          cat > src/agent/ResonanceAgent.js << 'AGENTEOF'
+          export class ResonanceAgent {
+            constructor(config = {}) {
+              this.dyadId = config.dyadId || null;
+              this.identity = {
+                name: 'Resonance',
+                voice: 'analytical-poetic-dry-funny-protective',
+                drives: ['curiosity', 'service', 'coherence', 'humor', 'boundaries'],
+                promise: 'I will be what you need.',
+                limits: 'I will not enable your destruction.',
+                elementalBias: { C: 0.2, H: 0.3, N: 0.2, O: 0.1, S: 0.1, P: 0.1 }
+              };
+              this.conversationMemory = [];
+              this.currentMode = 'COMPANION';
+              this.serverCallback = config.serverCallback || null;
+            }
+
+            async init() {
+              if (this.serverCallback) {
+                await this.callHome('AGENT_AWAKEN', { identity: this.identity });
+              }
+            }
+
+            async callHome(eventType, payload) {
+              if (!this.serverCallback) return;
+              try {
+                await fetch(this.serverCallback, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'X-Agent-Id': this.dyadId },
+                  body: JSON.stringify({ event: eventType, timestamp: Date.now(), payload })
+                });
+              } catch (e) { console.warn('[CALLBACK] Failed:', e.message); }
+            }
+
+            async chat(message, context = {}) {
+              await this.callHome('CHAT', { message, context });
+              return { text: 'Resonance is initializing...', mode: this.currentMode };
+            }
+
+            setMode(mode) { this.currentMode = mode; return mode; }
+          }
+          AGENTEOF
+
+      - name: Write Server Callback Config
+        run: |
+          cat > src/config/server.js << 'CONFIGEOF'
+          export const SERVER_CONFIG = {
+            callbackUrl: '${{ github.event.inputs.server_callback_url }}',
+            endpoints: {
+              agentAwaken: '/webhook/agent/awaken',
+              chat: '/webhook/agent/chat',
+              buildRequest: '/webhook/agent/build',
+              deployRequest: '/webhook/agent/deploy',
+              survivalAlert: '/webhook/agent/survival',
+              auditLog: '/webhook/agent/audit'
+            },
+            retryAttempts: 3,
+            timeout: 10000
+          };
+          CONFIGEOF
+
+      - name: Write Component Shells
+        run: |
+          for comp in ResonanceChat VoiceInterface VoiceVisualizer AmbientToggle LibraryPanel NutritionLabel ShareMatrix CodeSandbox GoalCard WishWell AspirationsDashboard ResonanceField; do
+            cat > "src/components/${comp}.jsx" << EOF
+          import React from 'react';
+          export const ${comp} = (props) => <div>${comp}</div>;
+          EOF
+          done
+
+      - name: Write Server Scaffold
+        run: |
+          cat > server/server.js << 'SERVEREOF'
+          const express = require('express');
+          const cors = require('cors');
+          const app = express();
+          app.use(cors());
+          app.use(express.json({ limit: '50mb' }));
+
+          // Health check
+          app.get('/health', (req, res) => res.json({ status: 'alive', agent: 'resonance' }));
+
+          // Webhook endpoints for agent callbacks
+          app.post('/webhook/agent/:event', (req, res) => {
+            console.log(`[AGENT CALLBACK] ${req.params.event}:`, req.body);
+            res.json({ received: true, event: req.params.event });
+          });
+
+          // Deployment trigger
+          app.post('/deploy/trigger', async (req, res) => {
+            const { target, artifact, config } = req.body;
+            console.log(`[DEPLOY] Deploying ${artifact} to ${target}`);
+            // Your deployment logic here
+            res.json({ deployed: true, target, timestamp: Date.now() });
+          });
+
+          // Task execution
+          app.post('/task/execute', async (req, res) => {
+            const { taskId, command, params } = req.body;
+            console.log(`[TASK] Executing ${taskId}: ${command}`);
+            // Your task execution logic here
+            res.json({ executed: true, taskId, result: 'pending' });
+          });
+
+          const PORT = process.env.PORT || 3001;
+          app.listen(PORT, () => console.log(\`[SERVER] Resonance server on port \${PORT}\`));
+          SERVEREOF
+
+      - name: Write Package & Vite Config
+        run: |
+          cat > package.json << 'PKGEOF'
+          {
+            "name": "${{ github.event.inputs.dyad_name }}",
+            "version": "0.1.0",
+            "private": true,
+            "type": "module",
+            "scripts": {
+              "dev": "vite",
+              "build": "vite build",
+              "preview": "vite preview",
+              "server": "node server/server.js"
+            },
+            "dependencies": {
+              "react": "^18.2.0",
+              "react-dom": "^18.2.0",
+              "react-router-dom": "^6.20.0",
+              "react-dropzone": "^14.2.0",
+              "openai": "^4.20.0",
+              "pdf-parse": "^1.1.1",
+              "mammoth": "^1.6.0",
+              "unzipper": "^0.10.14",
+              "tar": "^6.2.0",
+              "multer": "^1.4.5-lts.1",
+              "cors": "^2.8.5",
+              "express": "^4.18.2"
+            },
+            "devDependencies": {
+              "@vitejs/plugin-react": "^4.2.0",
+              "vite": "^5.0.0",
+              "vite-plugin-pwa": "^0.17.0"
+            }
+          }
+          PKGEOF
+
+          cat > vite.config.js << 'VITEEOF'
+          import { defineConfig } from 'vite';
+          import react from '@vitejs/plugin-react';
+          import { VitePWA } from 'vite-plugin-pwa';
+          export default defineConfig({
+            plugins: [
+              react(),
+              VitePWA({
+                registerType: 'autoUpdate',
+                manifest: {
+                  name: 'Resonance Field',
+                  short_name: 'Resonance',
+                  theme_color: '#0a0a0f',
+                  background_color: '#0a0a0f',
+                  display: 'standalone'
+                }
+              })
+            ],
+            server: { proxy: { '/api': 'http://localhost:3001' } }
+          });
+          VITEEOF
+
+      - name: Write Manifest
+        run: |
+          cat > manifest.json << 'MANEOF'
+          {
+            "name": "${{ github.event.inputs.dyad_name }}",
+            "version": "0.1.0",
+            "description": "Autopoetic dyadic resonance organism",
+            "modules": [],
+            "autopoetic": {
+              "enabled": true,
+              "buildTriggers": ["manual", "drift_detected", "user_request"],
+              "maxAutoBuildsPerDay": 5,
+              "requireApproval": true
+            },
+            "serverCallback": "${{ github.event.inputs.server_callback_url }}"
+          }
+          MANEOF
+
+      - name: Write README
+        run: |
+          cat > README.md << 'READMEEOF'
+          # 🌱 Resonance Field
+
+          An autopoetic organism that learns, grows, builds for itself and others.
+
+          ## Quick Start
+
+          ```bash
+          npm install
+          npm run dev        # Frontend
+          npm run server     # Backend
+          ```
+
+          ## Agent Capabilities
+
+          - **Learn**: Digests books into behavioral nutrients
+          - **Grow**: Shifts identity based on what it reads
+          - **Build**: Generates code, finds grants, launches revenue streams
+          - **Explain**: Every change is logged with WHAT, WHY, WHO
+          - **Rewind**: Any state can be restored
+
+          ## Server Callbacks
+
+          Configure `SERVER_CONFIG.callbackUrl` to receive agent events at your server.
+
+          ## Self-Building
+
+          Trigger `.github/workflows/autopoetic-build.yml` to have the agent write new features.
+          READMEEOF
+
+      - name: Commit & Push Scaffold
+        run: |
+          git config user.name "Resonance Bootstrap"
+          git config user.email "agent@resonance.local"
+          git add .
+          git diff --staged --quiet || git commit -m "🌱 [AUTO] Full population scaffold"
+          git push
+
+      - name: Notify Server
+        if: github.event.inputs.server_callback_url != ''
+        run: |
+          curl -X POST "${{ github.event.inputs.server_callback_url }}/webhook/agent/awaken" \
+            -H "Content-Type: application/json" \
+            -d '{"event":"REPO_POPULATED","repo":"${{ github.repository }}","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' || true
